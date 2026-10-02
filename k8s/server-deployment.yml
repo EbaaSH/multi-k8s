@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      component: server
+  template:
+    metadata:
+      labels:
+        component: server
+    spec:
+      containers:
+        - name: server
+          image: stephengrider/multi-server
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: redis-cluster-ip-service # name of the service
+            - name: REDIS_PORT
+              value: "6379" # it is must be a string because the env variable is a string
+            - name: PGUSER
+              value: postgres
+            - name: PGHOST
+              value: postgres-cluster-ip-service # name of the service
+            - name: PGPORT
+              value: "5432" # it is must be a string because the env variable is a string
+            - name: PGDATABASE
+              value: postgres
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword # name of the secret
+                  key: PGPASSWORD # we can have many key in the secret
+
+# for the database password, we will use a secret.
+# secret is a service like pods deployment, cluster and others
+# but for this implimentation we will use imperative command to create the secret for the password localy
+
+# kubectl create secret generic <secret_name> --from-literal key=value
+# kubectl create secret generic PGPASSWORD --from-literal PGPASSWORD=postgres
+
+# create: imperative command to create new service
+# secret: type of service
+# generic: type of secret, it is a generic secret that can be used for any type
+# <secret_name>: name of the secret, it is a unique name that can be used to reference the secret
+# --from-literal: flag to specify the key-value pair for the secret
+

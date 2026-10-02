@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: worker
+  template:
+    metadata:
+      labels:
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: stephengrider/multi-worker
+          # no ports required because there is nothing to expose from the worker container. It is not a web server, it is just a background process that will run and listen for messages from the server.
+          env:
+            - name: REDIS_HOST
+              value: redis-cluster-ip-service # name of the service
+            - name: REDIS_PORT
+              value: "6379" # it is must be a string because the env variable is a string

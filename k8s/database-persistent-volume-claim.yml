@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: database-persistent-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi # it has to be equal or less than the size of the persistent volume 2GB
+
+
+# Accesss Modes:
+# 1. ReadOnlyMany: can be read by multiple pods
+# 2. ReadWriteOnce: can be mounted as read-write by a single node
+# 3. ReadWriteMany: can be mounted as read-write by many nodes
+
+# ================================================
+
+# volume types in kubernetes:
+# volume: a file or directory on the host and a directory in the container when the pod is running and when the container crashes and restarts it will be deleted
+# persistentVolume: a file or directory on the host and a directory in the container when the pod is running and when the container crashes and restarts it will not be deleted but it will be deleted when the pod is deleted
+# persistentVolumeClaim: a file or directory on the host and a directory in the container when the pod is running and when the container crashes and restarts it will not be deleted but it will be deleted when the pod is deleted
+# the main purpose of persistentVolumeClaim is to request storage resources from the cluster and to bind to a persistentVolume that matches the requested storage resources.

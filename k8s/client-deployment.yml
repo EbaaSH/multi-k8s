@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      component: web
+  template:
+    metadata:
+      labels:
+        component: web
+    spec:
+      containers:
+        - name: client
+          image: stephengrider/multi-client
+          ports:
+            - containerPort: 3000
+
+# ClusterIP: it is allow internal communication between pods in the cluster. It is not accessible from outside the cluster.
+# Exposes a set of pods to other objects in the cluster
+
+# NodePort: it is accessible from outside the cluster.
+# Exposes a set of pods to the outside world (only good for dev purposes)
