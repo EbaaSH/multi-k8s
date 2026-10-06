@@ -1,7 +1,11 @@
 sudo: required
 services:
   - docker
-
+env:
+  global:
+    - SHA=$(git rev-parse HEAD)
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
+    # to avoid having to enter yes when installing the gcloud sdk
 before_install:
   # to install the google cloud sdk to can connect to the gcloud container registry
   - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
@@ -9,4 +13,59 @@ before_install:
   - source $HOME/google-cloud-sdk/path.bash.inc;
   - gcloud components update kubectl
   - gcloud auth activate-service-account --key-file service-account.json
-  -
+  - gcloud config set project multi-k8s-510619
+  - gcloud config set compute/zone us-central1-a
+  - gcloud container clusters get-credentials multi-cluster
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t ebaash/multi-client:latest -t ebaash/multi-client:$SHA -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true stephengrider/multi-client npm test
+
+# we stell need to create the secret service by imperetive command for the pgpassword
+# so we do this using the shel in the Google Cloud console
+# we run the gcloud command to connect to the cluster and then run the kubectl command to create the secret service
+# we run the following command to create the secret service for the pgpassword
+# kubectl create secret generic pgpassword --from-literal PGPASSWORD=<your password>
+deploy:
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: main
+
+# in GC shell we must install helm for configure the ngress/nginx
+# we install it by the ofitial docs by run in the shell of the GC console the following commands:
+# curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+# chmod 700 get_helm.sh
+# ./get_helm.sh
+
+# RBAC is a way to control access to resources in Kubernetes. It allows you to define roles and permissions for users and groups, and then assign those roles to specific resources. This way, you can control who has access to what in your Kubernetes cluster.
+# we have this types of roles in the RBAC:
+# user accounts, service accounts,  role bindings, cluster role bindings
+# user accounts: give access to the cluster to a specific user, and can be used to control access to resources in the cluster.
+# service accounts: give access to the cluster to a specific service, and can be used to control access to resources in the cluster.
+# role bindings: give access to a specific user or service to the all namespaces in the cluster, and can be used to control access to resources in the cluster.
+# cluster role bindings: give access to a specific user or service to the all namespaces in the cluster, and can be used to control access to resources in the cluster.
+
+# we now want to create a service account a spisific pod which it tiller with cluster role binding access
+# and the tiller is the server that helm can access to it as a cli
+
+# command:
+# kubectl create serviceaccount --namespace kube-system tiller
+# poprose:
+# create a new service account called tiller in the kube-system namespace.
+#command:
+# kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+# poprose:
+# create a new cluster role binding with the role cluster-admin and assign it to service account tiller
+
+# command:
+# helm init --service-account tiller --upgrade
+# poprose:
+# initialize helm with the tiller service account
+
+# now we can use helm to install the nginx ingress controller in our cluster from the ngress nginx documentation
+# # command:
+# helm upgrade --install ingress-nginx ingress-nginx \
+#   --repo https://kubernetes.github.io/ingress-nginx \
+#   --namespace ingress-nginx --create-namespace
