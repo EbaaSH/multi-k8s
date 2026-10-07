@@ -6,11 +6,32 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     # how the acctual copy works on the nginx
+
+    #====================
+    # this is for certificate with https
+    certmanager.k8s.io/cluster-issuer: 'letsencrypt-prod'
+    # it is to redirect the http to https always
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    #====================
+
 spec:
   ingressClassName: nginx
   # we want to create ingress controller based on nginx
+
+  # =====================
+  # this is for certificate with https
+  tls:
+    - hosts:
+        - k8s-multi.com
+        - www.k8s-multi.com
+      secretName: k8s-multi-com
+  # =====================
   rules:
-    - http:
+    # ====================
+    # this is for certificate with https
+    - host: k8s-multi.com
+    # ====================
+      http:
         paths:
           - path: /?(.*)
             pathType: ImplementationSpecific
@@ -26,3 +47,23 @@ spec:
                 name: server-cluster-ip-service
                 port:
                   number: 5000
+    # ====================
+    # this is for certificate with https
+    - host: www.k8s-multi.com
+      http:
+        paths:
+          - path: /?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: client-cluster-ip-service
+                port:
+                  number: 3000
+          - path: /api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: server-cluster-ip-service
+                port:
+                  number: 5000
+    # ====================
